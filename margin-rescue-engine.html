@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Margin Rescue Engine</title>
+  <style>
+    :root {
+      --bg: #000000;
+      --panel: #15181b;
+      --panel-2: #1b1f22;
+      --panel-3: #232526;
+      --soft: #2b2e31;
+      --soft-2: #313538;
+      --mid: #3a3e41;
+      --card: #232526;
+      --card-2: #2b2f33;
+      --accent: #414345;
+      --accent-2: #515457;
+      --text: #ffffff;
+      --text-soft: rgba(255,255,255,0.82);
+      --border: rgba(255, 255, 255, 0.12);
+      --shadow: rgba(0, 0, 0, 0.78);
+      --danger: #6b7075;
+      --success: #515457;
+      --warning: #414345;
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; font-family: Baskerville, "Palatino Linotype", "Book Antiqua", Georgia, serif; background: radial-gradient(circle at top center, #414345 0%, #232526 35%, #121416 68%, #000000 100%); color: var(--text); min-height: 100%; letter-spacing: 0.02em; }
+    body { padding: 20px; }
+    button, input, select, textarea { font: inherit; }
+    .app { max-width: 1500px; margin: 0 auto; display: grid; gap: 18px; }
+    .shell { display: grid; grid-template-columns: 300px 1fr; gap: 18px; }
+
+    .sidebar, .hero, .panel, .modal-card {
+      background: linear-gradient(180deg, rgba(65,67,69,0.22), rgba(10,11,12,0.96));
+      border: 1px solid var(--border);
+      box-shadow: 0 30px 60px -30px var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .sidebar {
+      border-radius: 30px;
+      padding: 22px;
+      position: sticky;
+      top: 20px;
+      height: calc(100vh - 40px);
+      overflow: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 26px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-badge {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, #414345, #232526);
+      color: #ffffff;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      box-shadow: inset 0 1px 0 rgba(44,81,96,0.45), 0 20px 40px -25px var(--shadow);
+    }
+
+    .brand h1, .hero h2, .section-title, .metric-card h3, .table-title, .recommendation h4, .mini-card h3, .modal-card h3 {
+      margin: 0;
+      color: var(--text);
+      letter-spacing: 0.04em;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+
+    .muted, .hero p, .metric-sub, label, th, .table-note, .tagline, .recommendation p, .mini-card p, .empty-state, .modal-card p, .legend-item span:last-child {
+      color: var(--text-soft);
+    }
+
+    .nav {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 26px;
+    }
+
+    .nav button, .ghost-btn, .primary-btn, .soft-btn, .danger-btn {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .nav button {
+      background: rgba(35,37,38,0.7);
+      color: var(--text);
+      padding: 14px 16px;
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .nav button.active, .nav button:hover, .ghost-btn:hover, .soft-btn:hover, .primary-btn:hover, .danger-btn:hover {
+      background: rgba(255,255,255,0.08);
+      transform: translateY(-1px);
+      box-shadow: 0 18px 40px -28px var(--shadow);
+    }
+
+    .sidebar-block {
+      padding: 18px;
+      background: rgba(35,37,38,0.72);
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      margin-bottom: 18px;
+    }
+
+    .small-list { display: grid; gap: 12px; margin-top: 14px; }
+    .small-list-item { display: flex; justify-content: space-between; gap: 10px; padding: 12px 14px; background: rgba(255,255,255,0.04); border-radius: 14px; }
+    .small-list-item strong { color: #2c5160; }
+
+    .main { display: grid; gap: 18px; }
+    .hero {
+      border-radius: 30px;
+      padding: 26px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -10% -30% auto;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(65,67,69,0.24) 0%, rgba(35,37,38,0.08) 45%, rgba(0,0,0,0) 70%);
+      pointer-events: none;
+    }
+
+    .hero-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+    .hero-grid, .metrics-grid, .recommendations-grid, .settings-grid, .forms-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .hero-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 22px; }
+    .metrics-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .recommendations-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .forms-grid { grid-template-columns: 1.1fr 1.1fr 0.8fr; align-items: start; }
+
+    .metric-card, .mini-card, .recommendation, .form-card, .chart-card, .table-card {
+      border-radius: 24px;
+      padding: 18px;
+      background: linear-gradient(180deg, rgba(65,67,69,0.18), rgba(0,0,0,0.42));
+      border: 1px solid var(--border);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .metric-value {
+      font-size: clamp(1.5rem, 2vw, 2.2rem);
+      font-weight: 600;
+      margin-top: 12px;
+      color: var(--text);
+      letter-spacing: -0.04em;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      font-size: 0.86rem;
+      color: var(--text);
+    }
+
+    .glow {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 0 18px rgba(255,255,255,0.45);
+    }
+
+    .primary-btn, .soft-btn, .ghost-btn, .danger-btn {
+      padding: 12px 16px;
+      font-weight: 600;
+    }
+
+    .primary-btn { background: linear-gradient(180deg, rgba(65,67,69,0.95), rgba(35,37,38,0.95)); color: #ffffff; }
+    .soft-btn { background: rgba(35,37,38,0.85); color: #ffffff; }
+    .ghost-btn { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.88); }
+    .danger-btn { background: rgba(255,255,255,0.08); color: #ffffff; }
+
+    .section-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    h1, h2, h3, h4, h5, h6, p, span, strong, small, label, th, td, li, div, input, select, textarea, button {
+      color: inherit;
+    }
+
+    input, select, textarea {
+      background: rgba(255,255,255,0.04) !important;
+      color: #ffffff !important;
+      border: 1px solid var(--border) !important;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: rgba(255,255,255,0.5) !important;
+    }
+
+    .panel {
+      border-radius: 30px;
+      padding: 20px;
+    }
+
+    .charts-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 18px; }
+    .tables-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 18px; }
+
+    .chart-shell {
+      margin-top: 18px;
+      background: rgba(0,0,0,0.24);
+      border-radius: 20px;
+      padding: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .chart-bars {
+      height: 250px;
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+    }
+
+    .bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .bar-wrap {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      background: linear-gradient(180deg, rgba(19,41,48,0.25), rgba(0,0,0,0.05));
+      border-radius: 16px 16px 10px 10px;
+      padding: 10px;
+    }
+
+    .bar {
+      width: min(70px, 100%);
+      border-radius: 18px 18px 8px 8px;
+      background: linear-gradient(180deg, #2c5160, #19313a);
+      box-shadow: inset 0 1px 0 rgba(44,81,96,0.5), 0 20px 45px -30px var(--shadow);
+      position: relative;
+      min-height: 24px;
+      transition: height 0.25s ease;
+    }
+
+    .bar::after {
+      content: attr(data-value);
+      position: absolute;
+      top: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.74rem;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .donut-wrap {
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      gap: 18px;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    .donut {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      position: relative;
+      background: conic-gradient(
+        #2c5160 0deg var(--slice1),
+        #244857 var(--slice1) calc(var(--slice1) + var(--slice2)),
+        #20404c calc(var(--slice1) + var(--slice2)) calc(var(--slice1) + var(--slice2) + var(--slice3)),
+        #19313a calc(var(--slice1) + var(--slice2) + var(--slice3)) 360deg
+      );
+      box-shadow: inset 0 1px 0 rgba(44,81,96,0.4), 0 24px 50px -36px var(--shadow);
+    }
+
+    .donut::before {
+      content: "";
+      position: absolute;
+      inset: 28px;
+      border-radius: 50%;
+      background: radial-gradient(circle at top, #132930, #000000);
+      border: 1px solid var(--border);
+    }
+
+    .donut-center {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      z-index: 1;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .legend { display: grid; gap: 12px; }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid var(--border);
+    }
+
+    .legend-left { display: flex; align-items: center; gap: 10px; }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+    th, td {
+      text-align: left;
+      padding: 13px 10px;
+      border-bottom: 1px solid rgba(44,81,96,0.18);
+      font-size: 0.94rem;
+    }
+    td { color: #2c5160; }
+    tbody tr:hover { background: rgba(19,41,48,0.24); }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(44,81,96,0.18);
+      border: 1px solid var(--border);
+      font-size: 0.78rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .recommendation h4 { margin-bottom: 10px; }
+    .recommendation .action-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; margin-top: 12px; }
+    .impact { font-size: 1.25rem; font-weight: 600; color: #2c5160; }
+
+    .form-card { display: grid; gap: 14px; }
+    .input-row { display: grid; gap: 8px; }
+    .input-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+
+    input, select, textarea {
+      width: 100%;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 14px 14px;
+      outline: none;
+    }
+    input::placeholder, textarea::placeholder { color: #20404c; }
+    input:focus, select:focus, textarea:focus { border-color: rgba(44,81,96,0.65); box-shadow: 0 0 0 3px rgba(44,81,96,0.15); }
+    textarea { min-height: 120px; resize: vertical; }
+
+    .inventory-list, .alert-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .inventory-item, .alert-item {
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .inventory-item strong, .alert-item strong { color: #2c5160; }
+
+    .footer-note {
+      text-align: center;
+      color: #20404c;
+      padding: 8px 12px 20px;
+      font-size: 0.9rem;
+    }
+
+    .hidden { display: none !important; }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.82);
+      display: none;
+      place-items: center;
+      padding: 18px;
+      z-index: 99;
+    }
+
+    .modal.open { display: grid; }
+
+    .modal-card {
+      width: min(720px, 100%);
+      border-radius: 28px;
+      padding: 22px;
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      padding: 14px 18px;
+      background: linear-gradient(180deg, rgba(44,81,96,0.9), rgba(19,41,48,0.95));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      color: #000000;
+      font-weight: 600;
+      box-shadow: 0 20px 50px -30px var(--shadow);
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: 0.25s ease;
+      z-index: 100;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 1200px) {
+      .shell, .charts-grid, .tables-grid, .forms-grid, .settings-grid { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; }
+    }
+
+    @media (max-width: 900px) {
+      .hero-grid, .metrics-grid, .recommendations-grid, .input-grid, .donut-wrap { grid-template-columns: 1fr; }
+      .donut-wrap { justify-items: center; }
+      .hero { padding: 20px; }
+      body { padding: 12px; }
+      .sidebar, .panel { border-radius: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div>
+            <div class="tagline">Ecommerce Profit OS</div>
+            <h1>Margin Rescue Engine</h1>
+          </div>
+          <div class="brand-badge">MR</div>
+        </div>
+
+        <div class="nav" id="navTabs">
+          <button class="active" data-view="dashboard">Dashboard</button>
+          <button data-view="products">Products</button>
+          <button data-view="orders">Orders</button>
+          <button data-view="returns">Returns</button>
+          <button data-view="actions">Actions</button>
+          <button data-view="settings">Settings</button>
+        </div>
+
+        <div class="sidebar-block">
+          <div class="pill"><span class="glow"></span> Live Profit Pressure</div>
+          <div class="small-list" id="sidebarLeaks"></div>
+        </div>
+
+        <div class="sidebar-block">
+          <div class="section-title-row">
+            <h3 class="section-title">Fast Controls</h3>
+          </div>
+          <div class="small-list">
+            <button class="soft-btn" id="openSampleBtn">Load sample data</button>
+            <button class="soft-btn" id="resetDataBtn">Reset all data</button>
+            <button class="soft-btn" id="exportBtn">Export JSON</button>
+          </div>
+        </div>
+
+        <div class="sidebar-block">
+          <h3 class="section-title">What this catches</h3>
+          <div class="small-list">
+            <div class="small-list-item"><span>Fake revenue winners</span><strong id="fakeWinnersCount">0</strong></div>
+            <div class="small-list-item"><span>Capital stuck in stock</span><strong id="stuckStockValue">R0</strong></div>
+            <div class="small-list-item"><span>Return-driven margin loss</span><strong id="returnLossValue">R0</strong></div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <section class="hero">
+          <div class="hero-top">
+            <div>
+              <div class="pill">Using only your chosen palette</div>
+              <h2 style="font-size:clamp(2rem,4vw,3.4rem); margin-top:12px;">Find the profit leaks killing your store.</h2>
+              <p style="max-width:860px; font-size:1.03rem; line-height:1.65;">Track true margin, return damage, discount bleed, dead stock pressure and abandoned cart opportunity in one place. Add your own products and orders or run the built-in sample store instantly.</p>
+            </div>
+            <div class="hero-actions">
+              <button class="primary-btn" id="quickSampleBtn">Run sample store</button>
+              <button class="ghost-btn" id="openOrderModalBtn">Add order</button>
+              <button class="ghost-btn" id="openProductModalBtn">Add product</button>
+            </div>
+          </div>
+
+          <div class="hero-grid">
+            <div class="metric-card">
+              <div class="metric-sub">Estimated monthly revenue</div>
+              <div class="metric-value" id="heroRevenue">R0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-sub">True gross profit</div>
+              <div class="metric-value" id="heroProfit">R0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-sub">Profit leaked</div>
+              <div class="metric-value" id="heroLeak">R0</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-sub">Net margin</div>
+              <div class="metric-value" id="heroMargin">0%</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel view" id="view-dashboard">
+          <div class="section-title-row">
+            <h3 class="section-title">Profit overview</h3>
+            <div class="pill">Action-first ecommerce analysis</div>
+          </div>
+          <div class="metrics-grid">
+            <div class="mini-card"><p>Discount leak</p><h3 id="discountLeak">R0</h3></div>
+            <div class="mini-card"><p>Return loss</p><h3 id="returnsLeak">R0</h3></div>
+            <div class="mini-card"><p>Dead stock trapped</p><h3 id="deadStockLeak">R0</h3></div>
+            <div class="mini-card"><p>Abandoned cart upside</p><h3 id="cartOpportunity">R0</h3></div>
+          </div>
+
+          <div class="charts-grid" style="margin-top:18px;">
+            <div class="chart-card">
+              <div class="section-title-row">
+                <div>
+                  <h3 class="table-title">Profit by top products</h3>
+                  <div class="table-note">Revenue is not enough. This ranks actual profit contribution.</div>
+                </div>
+              </div>
+              <div class="chart-shell">
+                <div class="chart-bars" id="profitBars"></div>
+              </div>
+            </div>
+
+            <div class="chart-card">
+              <div class="section-title-row">
+                <div>
+                  <h3 class="table-title">Leak composition</h3>
+                  <div class="table-note">Where your store is losing money right now.</div>
+                </div>
+              </div>
+              <div class="donut-wrap">
+                <div class="donut" id="donutChart">
+                  <div class="donut-center">
+                    <div>
+                      <div class="table-note">Leaked</div>
+                      <div id="donutCenterValue" style="font-size:1.4rem;">R0</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="legend" id="leakLegend"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tables-grid" style="margin-top:18px;">
+            <div class="table-card">
+              <div class="section-title-row">
+                <div>
+                  <h3 class="table-title">Products under pressure</h3>
+                  <div class="table-note">Low margin, high return, or too much stock.</div>
+                </div>
+              </div>
+              <div style="overflow:auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Revenue</th>
+                      <th>Profit</th>
+                      <th>Margin</th>
+                      <th>Pressure</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pressureTable"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="table-card">
+              <div class="section-title-row">
+                <div>
+                  <h3 class="table-title">Leak alerts</h3>
+                  <div class="table-note">Highest value problems first.</div>
+                </div>
+              </div>
+              <div class="alert-list" id="alertList"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel view hidden" id="view-products">
+          <div class="section-title-row">
+            <div>
+              <h3 class="section-title">Products</h3>
+              <div class="table-note">Create products with true cost inputs so profit stays real.</div>
+            </div>
+            <button class="primary-btn" id="openProductModalBtn2">Add product</button>
+          </div>
+          <div class="tables-grid">
+            <div class="table-card">
+              <div style="overflow:auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Price</th>
+                      <th>Cost</th>
+                      <th>Ship</th>
+                      <th>Stock</th>
+                      <th>Sold</th>
+                      <th>Net Margin</th>
+                    </tr>
+                  </thead>
+                  <tbody id="productsTable"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="form-card">
+              <h3 class="table-title">Inventory pressure</h3>
+              <p>Products with trapped capital or weak unit economics.</p>
+              <div class="inventory-list" id="inventoryPressureList"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel view hidden" id="view-orders">
+          <div class="section-title-row">
+            <div>
+              <h3 class="section-title">Orders</h3>
+              <div class="table-note">Order-level revenue, discount bleed and net profit.</div>
+            </div>
+            <button class="primary-btn" id="openOrderModalBtn2">Add order</button>
+          </div>
+          <div class="tables-grid">
+            <div class="table-card">
+              <div style="overflow:auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Order</th>
+                      <th>Revenue</th>
+                      <th>Discount</th>
+                      <th>Ship</th>
+                      <th>Profit</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ordersTable"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="form-card">
+              <h3 class="table-title">Abandoned cart simulator</h3>
+              <p>Enter rough values to estimate recoverable monthly profit.</p>
+              <div class="input-row">
+                <label>Monthly carts started</label>
+                <input type="number" id="cartStarted" min="0" placeholder="300" />
+              </div>
+              <div class="input-row">
+                <label>Checkout completion %</label>
+                <input type="number" id="cartCompletion" min="0" max="100" placeholder="28" />
+              </div>
+              <div class="input-row">
+                <label>Average order value</label>
+                <input type="number" id="cartAov" min="0" placeholder="850" />
+              </div>
+              <div class="input-row">
+                <label>Target recovered carts %</label>
+                <input type="number" id="cartRecovery" min="0" max="100" placeholder="12" />
+              </div>
+              <button class="soft-btn" id="calcCartBtn">Calculate upside</button>
+              <div class="inventory-item">
+                <div>
+                  <strong>Estimated recovered revenue</strong>
+                  <div class="muted">Based on your manual assumptions.</div>
+                </div>
+                <strong id="cartResult">R0</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel view hidden" id="view-returns">
+          <div class="section-title-row">
+            <div>
+              <h3 class="section-title">Returns</h3>
+              <div class="table-note">Find which products destroy margin through return behaviour.</div>
+            </div>
+          </div>
+          <div class="tables-grid">
+            <div class="table-card">
+              <div style="overflow:auto;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Units Sold</th>
+                      <th>Returns</th>
+                      <th>Rate</th>
+                      <th>Damage</th>
+                      <th>Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody id="returnsTable"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="form-card">
+              <h3 class="table-title">Return rescue notes</h3>
+              <div class="alert-list" id="returnsInsights"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel view hidden" id="view-actions">
+          <div class="section-title-row">
+            <div>
+              <h3 class="section-title">Recommended actions</h3>
+              <div class="table-note">Highest-R impact actions ranked first.</div>
+            </div>
+          </div>
+          <div class="recommendations-grid" id="recommendationsGrid"></div>
+        </section>
+
+        <section class="panel view hidden" id="view-settings">
+          <div class="section-title-row">
+            <div>
+              <h3 class="section-title">Store settings</h3>
+              <div class="table-note">Manual assumptions used in your calculations.</div>
+            </div>
+          </div>
+          <div class="settings-grid">
+            <div class="form-card">
+              <div class="input-row">
+                <label>Store name</label>
+                <input type="text" id="storeName" placeholder="Ocean Sunset Store" />
+              </div>
+              <div class="input-row">
+                <label>Monthly ad spend</label>
+                <input type="number" id="monthlyAdSpend" min="0" placeholder="18000" />
+              </div>
+              <div class="input-row">
+                <label>Monthly rent / overhead</label>
+                <input type="number" id="monthlyOverhead" min="0" placeholder="12000" />
+              </div>
+              <div class="input-row">
+                <label>Target net margin %</label>
+                <input type="number" id="targetMargin" min="0" max="100" placeholder="25" />
+              </div>
+              <button class="primary-btn" id="saveSettingsBtn">Save settings</button>
+            </div>
+            <div class="form-card">
+              <h3 class="table-title">How the engine thinks</h3>
+              <div class="alert-list">
+                <div class="alert-item"><div><strong>True profit</strong><div class="muted">Revenue minus product cost, shipping, discounts and estimated return damage.</div></div></div>
+                <div class="alert-item"><div><strong>Dead stock pressure</strong><div class="muted">Current stock value on products selling too slowly or with weak margin.</div></div></div>
+                <div class="alert-item"><div><strong>Fake winner</strong><div class="muted">A high-revenue product with bad real profit quality.</div></div></div>
+                <div class="alert-item"><div><strong>Action score</strong><div class="muted">Estimated money recoverable in the next 30 days if the recommendation is executed.</div></div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <div class="footer-note">Single-file ecommerce web app. Local-first. Data persists in your browser.</div>
+  </div>
+
+  <div class="modal" id="productModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3>Add product</h3>
+          <p>Create a product with full cost inputs.</p>
+        </div>
+        <button class="ghost-btn" data-close="productModal">Close</button>
+      </div>
+      <div class="input-grid">
+        <div class="input-row">
+          <label>Product name</label>
+          <input type="text" id="productName" placeholder="Ocean Hoodie" />
+        </div>
+        <div class="input-row">
+          <label>Category</label>
+          <input type="text" id="productCategory" placeholder="Apparel" />
+        </div>
+        <div class="input-row">
+          <label>Selling price</label>
+          <input type="number" id="productPrice" min="0" placeholder="899" />
+        </div>
+        <div class="input-row">
+          <label>Product cost</label>
+          <input type="number" id="productCost" min="0" placeholder="320" />
+        </div>
+        <div class="input-row">
+          <label>Shipping cost per order</label>
+          <input type="number" id="productShipping" min="0" placeholder="95" />
+        </div>
+        <div class="input-row">
+          <label>Current stock</label>
+          <input type="number" id="productStock" min="0" placeholder="40" />
+        </div>
+        <div class="input-row">
+          <label>Units sold this month</label>
+          <input type="number" id="productSold" min="0" placeholder="18" />
+        </div>
+        <div class="input-row">
+          <label>Return rate %</label>
+          <input type="number" id="productReturnRate" min="0" max="100" placeholder="12" />
+        </div>
+      </div>
+      <div class="input-row" style="margin-top:14px;">
+        <label>Main return reason</label>
+        <input type="text" id="productReturnReason" placeholder="Sizing issue / damaged / wrong expectations" />
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;">
+        <button class="primary-btn" id="saveProductBtn">Save product</button>
+        <button class="soft-btn" data-close="productModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="orderModal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <div>
+          <h3>Add order</h3>
+          <p>Use a product and track discount plus fulfilment outcome.</p>
+        </div>
+        <button class="ghost-btn" data-close="orderModal">Close</button>
+      </div>
+      <div class="input-grid">
+        <div class="input-row">
+          <label>Order ID</label>
+          <input type="text" id="orderId" placeholder="#OS-1042" />
+        </div>
+        <div class="input-row">
+          <label>Date</label>
+          <input type="date" id="orderDate" />
+        </div>
+        <div class="input-row">
+          <label>Product</label>
+          <select id="orderProduct"></select>
+        </div>
+        <div class="input-row">
+          <label>Quantity</label>
+          <input type="number" id="orderQty" min="1" value="1" />
+        </div>
+        <div class="input-row">
+          <label>Discount amount</label>
+          <input type="number" id="orderDiscount" min="0" placeholder="60" />
+        </div>
+        <div class="input-row">
+          <label>Status</label>
+          <select id="orderStatus">
+            <option value="Completed">Completed</option>
+            <option value="Pending">Pending</option>
+            <option value="Returned">Returned</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:16px;">
+        <button class="primary-btn" id="saveOrderBtn">Save order</button>
+        <button class="soft-btn" data-close="orderModal">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = 'marginRescueEngineStateV1';
+
+    const sampleState = {
+      settings: {
+        storeName: 'Ocean Sunset',
+        monthlyAdSpend: 18000,
+        monthlyOverhead: 12000,
+        targetMargin: 25
+      },
+      products: [
+        { id: crypto.randomUUID(), name: 'Ocean Sunset Hoodie', category: 'Apparel', price: 899, cost: 345, shipping: 95, stock: 44, sold: 31, returnRate: 16, returnReason: 'Sizing mismatch' },
+        { id: crypto.randomUUID(), name: 'Deep Tide Lamp', category: 'Homeware', price: 1299, cost: 520, shipping: 110, stock: 18, sold: 8, returnRate: 4, returnReason: 'Minor transit damage' },
+        { id: crypto.randomUUID(), name: 'Coastal Journal Set', category: 'Stationery', price: 399, cost: 118, shipping: 65, stock: 120, sold: 21, returnRate: 2, returnReason: 'Low issue rate' },
+        { id: crypto.randomUUID(), name: 'Night Current Bottle', category: 'Accessories', price: 549, cost: 210, shipping: 70, stock: 76, sold: 12, returnRate: 9, returnReason: 'Colour expectations' },
+        { id: crypto.randomUUID(), name: 'Blue Dusk Blanket', category: 'Homeware', price: 1499, cost: 690, shipping: 145, stock: 28, sold: 6, returnRate: 12, returnReason: 'Texture expectations' },
+        { id: crypto.randomUUID(), name: 'Wave Mist Tee', category: 'Apparel', price: 499, cost: 160, shipping: 78, stock: 90, sold: 39, returnRate: 18, returnReason: 'Fit issues' }
+      ],
+      orders: []
+    };
+
+    function generateSampleOrders(products) {
+      const rows = [
+        ['#OS-1001', '2026-03-02', products[0].id, 2, 120, 'Completed'],
+        ['#OS-1002', '2026-03-03', products[1].id, 1, 0, 'Completed'],
+        ['#OS-1003', '2026-03-04', products[5].id, 3, 90, 'Returned'],
+        ['#OS-1004', '2026-03-05', products[2].id, 4, 40, 'Completed'],
+        ['#OS-1005', '2026-03-07', products[4].id, 1, 150, 'Pending'],
+        ['#OS-1006', '2026-03-08', products[3].id, 2, 60, 'Completed'],
+        ['#OS-1007', '2026-03-10', products[0].id, 1, 0, 'Completed'],
+        ['#OS-1008', '2026-03-12', products[5].id, 2, 50, 'Completed'],
+        ['#OS-1009', '2026-03-14', products[1].id, 1, 80, 'Completed'],
+        ['#OS-1010', '2026-03-16', products[2].id, 6, 150, 'Completed'],
+        ['#OS-1011', '2026-03-18', products[4].id, 1, 90, 'Returned'],
+        ['#OS-1012', '2026-03-22', products[3].id, 3, 110, 'Completed']
+      ];
+      return rows.map(([id, date, productId, qty, discount, status]) => ({ id, date, productId, qty, discount, status }));
+    }
+
+    let state = loadState();
+    if (!state.orders.length && state.products.length === sampleState.products.length && state.products[0]?.name === sampleState.products[0].name) {
+      state.orders = generateSampleOrders(state.products);
+      saveState();
+    }
+
+    const $ = (id) => document.getElementById(id);
+    const currency = (value) => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(Number(value || 0));
+    const percent = (value) => `${Number(value || 0).toFixed(1)}%`;
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        const initial = JSON.parse(JSON.stringify(sampleState));
+        initial.orders = generateSampleOrders(initial.products);
+        return initial;
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        return {
+          settings: parsed.settings || { ...sampleState.settings },
+          products: Array.isArray(parsed.products) ? parsed.products : [],
+          orders: Array.isArray(parsed.orders) ? parsed.orders : []
+        };
+      } catch {
+        const fallback = JSON.parse(JSON.stringify(sampleState));
+        fallback.orders = generateSampleOrders(fallback.products);
+        return fallback;
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function showToast(message) {
+      const toast = $('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    function openModal(id) { $(id).classList.add('open'); }
+    function closeModal(id) { $(id).classList.remove('open'); }
+
+    function getProductById(id) {
+      return state.products.find((p) => p.id === id);
+    }
+
+    function getProductMetrics(product) {
+      const productOrders = state.orders.filter((o) => o.productId === product.id);
+      const revenue = productOrders.reduce((sum, o) => sum + product.price * o.qty, 0);
+      const discounts = productOrders.reduce((sum, o) => sum + Number(o.discount || 0), 0);
+      const unitsSold = productOrders.reduce((sum, o) => sum + Number(o.qty || 0), 0) || Number(product.sold || 0);
+      const returnedUnits = productOrders.filter((o) => o.status === 'Returned').reduce((sum, o) => sum + Number(o.qty || 0), 0);
+      const effectiveReturnUnits = Math.max(returnedUnits, Math.round(unitsSold * ((Number(product.returnRate || 0) / 100))));
+      const returnDamage = effectiveReturnUnits * (Number(product.cost || 0) + Number(product.shipping || 0));
+      const shippingCost = productOrders.reduce((sum, o) => sum + Number(product.shipping || 0), 0);
+      const cogs = unitsSold * Number(product.cost || 0);
+      const grossProfit = revenue - discounts - shippingCost - cogs - returnDamage;
+      const margin = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
+      const inventoryValue = Number(product.stock || 0) * Number(product.cost || 0);
+      const sellThrough = Number(product.stock || 0) + unitsSold > 0 ? (unitsSold / (Number(product.stock || 0) + unitsSold)) * 100 : 0;
+      const isFakeWinner = revenue >= 5000 && margin < Number(state.settings.targetMargin || 25) * 0.65;
+      const pressureScore = (
+        (margin < state.settings.targetMargin ? (state.settings.targetMargin - margin) * 2 : 0) +
+        Number(product.returnRate || 0) * 1.4 +
+        (sellThrough < 22 ? 24 - sellThrough : 0) +
+        (inventoryValue > 10000 ? 18 : 0)
+      );
+      return {
+        revenue, discounts, unitsSold, returnedUnits: effectiveReturnUnits, returnDamage,
+        shippingCost, cogs, grossProfit, margin, inventoryValue, sellThrough,
+        isFakeWinner, pressureScore
+      };
+    }
+
+    function getSummary() {
+      const productMetrics = state.products.map((product) => ({ product, ...getProductMetrics(product) }));
+      const totalRevenue = productMetrics.reduce((sum, item) => sum + item.revenue, 0);
+      const totalProfit = productMetrics.reduce((sum, item) => sum + item.grossProfit, 0);
+      const totalDiscounts = productMetrics.reduce((sum, item) => sum + item.discounts, 0);
+      const totalReturnDamage = productMetrics.reduce((sum, item) => sum + item.returnDamage, 0);
+      const deadStock = productMetrics
+        .filter((item) => item.sellThrough < 25 || item.margin < state.settings.targetMargin * 0.7)
+        .reduce((sum, item) => sum + item.inventoryValue, 0);
+      const adSpend = Number(state.settings.monthlyAdSpend || 0);
+      const overhead = Number(state.settings.monthlyOverhead || 0);
+      const cartOpportunity = Math.max(totalRevenue * 0.12, 0);
+      const totalLeak = totalDiscounts + totalReturnDamage + deadStock * 0.25 + cartOpportunity * 0.2;
+      const netMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+      return { productMetrics, totalRevenue, totalProfit, totalDiscounts, totalReturnDamage, deadStock, adSpend, overhead, cartOpportunity, totalLeak, netMargin };
+    }
+
+    function getRecommendations(summary) {
+      const recs = [];
+      const targetMargin = Number(state.settings.targetMargin || 25);
+      const underpriced = [...summary.productMetrics]
+        .filter((x) => x.margin < targetMargin && x.revenue > 0)
+        .sort((a, b) => a.margin - b.margin)[0];
+      if (underpriced) {
+        const recoverable = Math.max(underpriced.revenue * 0.08, 0);
+        recs.push({
+          title: `Raise price on ${underpriced.product.name}`,
+          body: `This SKU drives revenue but misses your target margin badly. A tighter price or reduced discounting could recover profit fast.`,
+          impact: recoverable,
+          tag: 'Pricing'
+        });
+      }
+      const highReturn = [...summary.productMetrics].sort((a, b) => b.returnDamage - a.returnDamage)[0];
+      if (highReturn && highReturn.returnDamage > 0) {
+        recs.push({
+          title: `Fix return issue on ${highReturn.product.name}`,
+          body: `Main reason: ${highReturn.product.returnReason || 'Unknown'}. Rewrite product page or tighten fulfilment checks to stop margin bleed.`,
+          impact: highReturn.returnDamage * 0.6,
+          tag: 'Returns'
+        });
+      }
+      const dead = [...summary.productMetrics].sort((a, b) => b.inventoryValue - a.inventoryValue)[0];
+      if (dead && dead.inventoryValue > 0) {
+        recs.push({
+          title: `Bundle or liquidate ${dead.product.name}`,
+          body: `This product is trapping capital in stock. Pair it with a stronger SKU or push controlled markdowns before it gets worse.`,
+          impact: dead.inventoryValue * 0.22,
+          tag: 'Inventory'
+        });
+      }
+      if (summary.totalDiscounts > 0) {
+        recs.push({
+          title: `Tighten discount use`,
+          body: `Your current discounting is cutting directly into margin. Restrict blanket codes and move to bundle-based offers instead.`,
+          impact: summary.totalDiscounts * 0.45,
+          tag: 'Discounts'
+        });
+      }
+      recs.push({
+        title: `Recover abandoned carts`,
+        body: `A basic cart rescue flow could reclaim a portion of unfinished checkouts and lift profit without more ad spend.`,
+        impact: summary.cartOpportunity * 0.3,
+        tag: 'Conversion'
+      });
+      return recs.sort((a, b) => b.impact - a.impact).slice(0, 6);
+    }
+
+    function renderSidebar(summary) {
+      $('sidebarLeaks').innerHTML = [
+        ['Discount bleed', currency(summary.totalDiscounts)],
+        ['Returns damage', currency(summary.totalReturnDamage)],
+        ['Dead stock drag', currency(summary.deadStock)],
+        ['Cart upside', currency(summary.cartOpportunity)]
+      ].map(([label, value]) => `<div class="small-list-item"><span>${label}</span><strong>${value}</strong></div>`).join('');
+
+      const fakeWinners = summary.productMetrics.filter((x) => x.isFakeWinner).length;
+      $('fakeWinnersCount').textContent = fakeWinners;
+      $('stuckStockValue').textContent = currency(summary.deadStock);
+      $('returnLossValue').textContent = currency(summary.totalReturnDamage);
+    }
+
+    function renderHero(summary) {
+      $('heroRevenue').textContent = currency(summary.totalRevenue);
+      $('heroProfit').textContent = currency(summary.totalProfit);
+      $('heroLeak').textContent = currency(summary.totalLeak);
+      $('heroMargin').textContent = percent(summary.netMargin);
+    }
+
+    function renderDashboard(summary) {
+      $('discountLeak').textContent = currency(summary.totalDiscounts);
+      $('returnsLeak').textContent = currency(summary.totalReturnDamage);
+      $('deadStockLeak').textContent = currency(summary.deadStock);
+      $('cartOpportunity').textContent = currency(summary.cartOpportunity);
+
+      const topProfit = [...summary.productMetrics]
+        .filter((x) => x.revenue > 0)
+        .sort((a, b) => b.grossProfit - a.grossProfit)
+        .slice(0, 5);
+      const maxProfit = Math.max(...topProfit.map((x) => x.grossProfit), 1);
+      $('profitBars').innerHTML = topProfit.map(item => {
+        const height = Math.max((item.grossProfit / maxProfit) * 100, 12);
+        return `
+          <div class="bar-col">
+            <div class="bar-wrap">
+              <div class="bar" style="height:${height}%" data-value="${currency(item.grossProfit)}"></div>
+            </div>
+            <div class="table-note" style="text-align:center;">${item.product.name}</div>
+          </div>`;
+      }).join('') || `<div class="empty-state">Add products and orders to see profit distribution.</div>`;
+
+      const leaks = [
+        { label: 'Discounts', value: summary.totalDiscounts, color: '#2c5160' },
+        { label: 'Returns', value: summary.totalReturnDamage, color: '#244857' },
+        { label: 'Dead stock', value: summary.deadStock * 0.25, color: '#20404c' },
+        { label: 'Cart loss', value: summary.cartOpportunity * 0.2, color: '#19313a' }
+      ];
+      const total = leaks.reduce((sum, item) => sum + item.value, 0) || 1;
+      const slices = leaks.map(item => (item.value / total) * 360);
+      const donut = $('donutChart');
+      donut.style.setProperty('--slice1', `${slices[0] || 0}deg`);
+      donut.style.setProperty('--slice2', `${slices[1] || 0}deg`);
+      donut.style.setProperty('--slice3', `${slices[2] || 0}deg`);
+      $('donutCenterValue').textContent = currency(summary.totalLeak);
+      $('leakLegend').innerHTML = leaks.map(item => `
+        <div class="legend-item">
+          <div class="legend-left"><span class="legend-dot" style="background:${item.color}"></span><span>${item.label}</span></div>
+          <strong>${currency(item.value)}</strong>
+        </div>`).join('');
+
+      const pressureItems = [...summary.productMetrics].sort((a, b) => b.pressureScore - a.pressureScore).slice(0, 6);
+      $('pressureTable').innerHTML = pressureItems.map(item => `
+        <tr>
+          <td>${item.product.name}</td>
+          <td>${currency(item.revenue)}</td>
+          <td>${currency(item.grossProfit)}</td>
+          <td>${percent(item.margin)}</td>
+          <td><span class="status">${item.pressureScore > 40 ? 'High' : item.pressureScore > 25 ? 'Medium' : 'Low'}</span></td>
+        </tr>`).join('') || `<tr><td colspan="5" class="empty-state">No product data yet.</td></tr>`;
+
+      const alerts = [];
+      const worstMargin = [...summary.productMetrics].sort((a, b) => a.margin - b.margin)[0];
+      if (worstMargin && worstMargin.revenue > 0) alerts.push({ title: 'Margin compression', text: `${worstMargin.product.name} is running at only ${percent(worstMargin.margin)} net margin.` });
+      if (summary.totalReturnDamage > 0) alerts.push({ title: 'Returns hurting profit', text: `${currency(summary.totalReturnDamage)} is being lost to returns and fulfilment damage.` });
+      if (summary.deadStock > 0) alerts.push({ title: 'Cash trapped in inventory', text: `${currency(summary.deadStock)} is tied up in slow stock.` });
+      if (summary.totalDiscounts > 0) alerts.push({ title: 'Discount dependency', text: `${currency(summary.totalDiscounts)} has been given away through discounts.` });
+      $('alertList').innerHTML = alerts.map(alert => `
+        <div class="alert-item">
+          <div><strong>${alert.title}</strong><div class="muted">${alert.text}</div></div>
+        </div>`).join('') || `<div class="empty-state">No alerts yet.</div>`;
+    }
+
+    function renderProducts(summary) {
+      $('productsTable').innerHTML = summary.productMetrics.map(item => `
+        <tr>
+          <td>${item.product.name}</td>
+          <td>${currency(item.product.price)}</td>
+          <td>${currency(item.product.cost)}</td>
+          <td>${currency(item.product.shipping)}</td>
+          <td>${item.product.stock}</td>
+          <td>${item.unitsSold}</td>
+          <td>${percent(item.margin)}</td>
+        </tr>`).join('') || `<tr><td colspan="7" class="empty-state">No products added yet.</td></tr>`;
+
+      const pressure = [...summary.productMetrics].sort((a, b) => b.pressureScore - a.pressureScore).slice(0, 5);
+      $('inventoryPressureList').innerHTML = pressure.map(item => `
+        <div class="inventory-item">
+          <div>
+            <strong>${item.product.name}</strong>
+            <div class="muted">Stock value ${currency(item.inventoryValue)} · Sell-through ${percent(item.sellThrough)}</div>
+          </div>
+          <strong>${item.pressureScore.toFixed(0)}</strong>
+        </div>`).join('') || `<div class="empty-state">No inventory pressure yet.</div>`;
+    }
+
+    function renderOrders() {
+      $('ordersTable').innerHTML = state.orders.map(order => {
+        const product = getProductById(order.productId);
+        if (!product) return '';
+        const revenue = product.price * order.qty;
+        const profit = revenue - Number(order.discount || 0) - (product.cost * order.qty) - product.shipping - (order.status === 'Returned' ? (product.cost + product.shipping) * order.qty : 0);
+        return `
+          <tr>
+            <td>${order.date}</td>
+            <td>${order.id}</td>
+            <td>${currency(revenue)}</td>
+            <td>${currency(order.discount)}</td>
+            <td>${currency(product.shipping)}</td>
+            <td>${currency(profit)}</td>
+            <td><span class="status">${order.status}</span></td>
+          </tr>`;
+      }).join('') || `<tr><td colspan="7" class="empty-state">No orders added yet.</td></tr>`;
+    }
+
+    function renderReturns(summary) {
+      const returnRows = summary.productMetrics.filter(item => item.unitsSold > 0);
+      $('returnsTable').innerHTML = returnRows.map(item => `
+        <tr>
+          <td>${item.product.name}</td>
+          <td>${item.unitsSold}</td>
+          <td>${item.returnedUnits}</td>
+          <td>${percent(item.product.returnRate)}</td>
+          <td>${currency(item.returnDamage)}</td>
+          <td>${item.product.returnReason || 'N/A'}</td>
+        </tr>`).join('') || `<tr><td colspan="6" class="empty-state">No return data yet.</td></tr>`;
+
+      const insights = [...returnRows].sort((a, b) => b.returnDamage - a.returnDamage).slice(0, 4);
+      $('returnsInsights').innerHTML = insights.map(item => `
+        <div class="alert-item">
+          <div>
+            <strong>${item.product.name}</strong>
+            <div class="muted">Main issue: ${item.product.returnReason || 'Unknown'} · Estimated damage ${currency(item.returnDamage)}</div>
+          </div>
+        </div>`).join('') || `<div class="empty-state">No return insights yet.</div>`;
+    }
+
+    function renderActions(summary) {
+      const recs = getRecommendations(summary);
+      $('recommendationsGrid').innerHTML = recs.map((rec, index) => `
+        <div class="recommendation">
+          <div class="pill">${rec.tag}</div>
+          <h4 style="margin-top:14px;">${index + 1}. ${rec.title}</h4>
+          <p>${rec.body}</p>
+          <div class="action-row">
+            <div>
+              <div class="table-note">Estimated recoverable</div>
+              <div class="impact">${currency(rec.impact)}</div>
+            </div>
+            <button class="soft-btn" onclick="markActionDone('${rec.title.replace(/'/g, "\\'")}')">Mark done</button>
+          </div>
+        </div>`).join('') || `<div class="empty-state">No actions available yet.</div>`;
+    }
+
+    function renderSettings() {
+      $('storeName').value = state.settings.storeName || '';
+      $('monthlyAdSpend').value = state.settings.monthlyAdSpend || '';
+      $('monthlyOverhead').value = state.settings.monthlyOverhead || '';
+      $('targetMargin').value = state.settings.targetMargin || '';
+    }
+
+    function renderProductOptions() {
+      const select = $('orderProduct');
+      select.innerHTML = state.products.map(product => `<option value="${product.id}">${product.name}</option>`).join('');
+    }
+
+    function render() {
+      const summary = getSummary();
+      renderSidebar(summary);
+      renderHero(summary);
+      renderDashboard(summary);
+      renderProducts(summary);
+      renderOrders();
+      renderReturns(summary);
+      renderActions(summary);
+      renderSettings();
+      renderProductOptions();
+    }
+
+    function switchView(view) {
+      document.querySelectorAll('.view').forEach(section => section.classList.add('hidden'));
+      document.querySelector(`#view-${view}`).classList.remove('hidden');
+      document.querySelectorAll('#navTabs button').forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
+    }
+
+    function validateNumber(value, fallback = 0) {
+      const num = Number(value);
+      return Number.isFinite(num) ? num : fallback;
+    }
+
+    function saveProduct() {
+      const name = $('productName').value.trim();
+      const category = $('productCategory').value.trim();
+      if (!name || !category) return showToast('Product name and category are required.');
+
+      const price = validateNumber($('productPrice').value);
+      const cost = validateNumber($('productCost').value);
+      const shipping = validateNumber($('productShipping').value);
+      const stock = validateNumber($('productStock').value);
+      const sold = validateNumber($('productSold').value);
+      const returnRate = validateNumber($('productReturnRate').value);
+      if (price <= 0 || cost < 0 || shipping < 0 || stock < 0 || sold < 0 || returnRate < 0 || returnRate > 100) {
+        return showToast('Enter valid product numbers.');
+      }
+
+      state.products.unshift({
+        id: crypto.randomUUID(),
+        name,
+        category,
+        price,
+        cost,
+        shipping,
+        stock,
+        sold,
+        returnRate,
+        returnReason: $('productReturnReason').value.trim()
+      });
+      saveState();
+      render();
+      closeModal('productModal');
+      document.querySelectorAll('#productModal input').forEach(input => input.value = '');
+      showToast('Product saved.');
+    }
+
+    function saveOrder() {
+      const id = $('orderId').value.trim() || `#OS-${Math.floor(Math.random() * 9000 + 1000)}`;
+      const date = $('orderDate').value;
+      const productId = $('orderProduct').value;
+      const qty = validateNumber($('orderQty').value, 1);
+      const discount = validateNumber($('orderDiscount').value);
+      const status = $('orderStatus').value;
+      if (!date || !productId || qty <= 0 || discount < 0) {
+        return showToast('Complete the order form properly.');
+      }
+      state.orders.unshift({ id, date, productId, qty, discount, status });
+      saveState();
+      render();
+      closeModal('orderModal');
+      $('orderId').value = '';
+      $('orderDiscount').value = '';
+      $('orderQty').value = '1';
+      $('orderStatus').value = 'Completed';
+      showToast('Order saved.');
+    }
+
+    function saveSettingsAction() {
+      const storeName = $('storeName').value.trim() || 'Your Store';
+      const monthlyAdSpend = validateNumber($('monthlyAdSpend').value);
+      const monthlyOverhead = validateNumber($('monthlyOverhead').value);
+      const targetMargin = validateNumber($('targetMargin').value, 25);
+      if (targetMargin < 0 || targetMargin > 100) return showToast('Target margin must be between 0 and 100.');
+      state.settings = { storeName, monthlyAdSpend, monthlyOverhead, targetMargin };
+      saveState();
+      render();
+      showToast('Settings saved.');
+    }
+
+    function exportState() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'margin-rescue-engine-data.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Data exported.');
+    }
+
+    function calculateCartUpside() {
+      const started = validateNumber($('cartStarted').value);
+      const completion = validateNumber($('cartCompletion').value);
+      const aov = validateNumber($('cartAov').value);
+      const recovery = validateNumber($('cartRecovery').value);
+      if ([started, completion, aov, recovery].some(v => v < 0) || completion > 100 || recovery > 100) {
+        return showToast('Enter valid cart numbers.');
+      }
+      const abandoned = started * (1 - completion / 100);
+      const recoveredRevenue = abandoned * (recovery / 100) * aov;
+      $('cartResult').textContent = currency(recoveredRevenue);
+      showToast('Cart upside calculated.');
+    }
+
+    function loadSample() {
+      state = JSON.parse(JSON.stringify(sampleState));
+      state.orders = generateSampleOrders(state.products);
+      saveState();
+      render();
+      showToast('Sample data loaded.');
+    }
+
+    function resetAll() {
+      if (!confirm('Reset all products, orders and settings?')) return;
+      state = { settings: { storeName: 'Your Store', monthlyAdSpend: 0, monthlyOverhead: 0, targetMargin: 25 }, products: [], orders: [] };
+      saveState();
+      render();
+      showToast('All data reset.');
+    }
+
+    function markActionDone(title) {
+      showToast(`Action completed: ${title}`);
+    }
+    window.markActionDone = markActionDone;
+
+    document.querySelectorAll('#navTabs button').forEach(btn => btn.addEventListener('click', () => switchView(btn.dataset.view)));
+    document.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => closeModal(btn.dataset.close)));
+    $('openProductModalBtn').addEventListener('click', () => openModal('productModal'));
+    $('openProductModalBtn2').addEventListener('click', () => openModal('productModal'));
+    $('openOrderModalBtn').addEventListener('click', () => openModal('orderModal'));
+    $('openOrderModalBtn2').addEventListener('click', () => openModal('orderModal'));
+    $('saveProductBtn').addEventListener('click', saveProduct);
+    $('saveOrderBtn').addEventListener('click', saveOrder);
+    $('saveSettingsBtn').addEventListener('click', saveSettingsAction);
+    $('quickSampleBtn').addEventListener('click', loadSample);
+    $('openSampleBtn').addEventListener('click', loadSample);
+    $('resetDataBtn').addEventListener('click', resetAll);
+    $('exportBtn').addEventListener('click', exportState);
+    $('calcCartBtn').addEventListener('click', calculateCartUpside);
+
+    $('orderDate').value = new Date().toISOString().slice(0, 10);
+
+    render();
+  </script>
+</body>
+</html>
